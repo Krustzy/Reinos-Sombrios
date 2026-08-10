@@ -43,6 +43,7 @@ export class CombatScene extends Phaser.Scene {
   init(data: CombatInitData): void {
     this.enemyId = data.enemyId;
     this.ended = false;
+    this.turnBusy = false;
   }
 
   create(): void {
