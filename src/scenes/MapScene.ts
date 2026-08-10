@@ -11,11 +11,10 @@ import { showCharacterSheet } from '../ui/screens/CharacterSheetScreen';
 import { showZoneTravel } from '../ui/screens/ZoneTravelScreen';
 import { salvar } from '../systems/save/SaveManager';
 
-const WORLD_W = 2800;
-const WORLD_H = 2000;
 const PLAYER_SPEED = 160;
-const TREE_COUNT = 110;
-const ENEMY_COUNT = 16;
+const CHUNK_SIZE = 480;
+const TREES_PER_CHUNK = [3, 7] as const;
+const ENEMY_CHANCE_PER_CHUNK = 0.5;
 
 export class MapScene extends Phaser.Scene {
   private player!: Phaser.Physics.Arcade.Sprite;
@@ -28,6 +27,12 @@ export class MapScene extends Phaser.Scene {
   private shopPrompt!: Phaser.GameObjects.Text;
   private inCombatTransition = false;
 
+  private worldW = 0;
+  private worldH = 0;
+  private zoneId = '';
+  private generatedChunks = new Set<string>();
+  private lastChunkKey = '';
+
   constructor() {
     super('MapScene');
   }
@@ -38,20 +43,20 @@ export class MapScene extends Phaser.Scene {
     const raca = getRace(player.racaId);
 
     this.inCombatTransition = false;
-    this.physics.world.setBounds(0, 0, WORLD_W, WORLD_H);
+    this.zoneId = zone.id;
+    this.generatedChunks = new Set();
+    this.lastChunkKey = '';
 
-    const bg = this.add.tileSprite(0, 0, WORLD_W, WORLD_H, 'tiles', 48).setOrigin(0, 0);
+    // Fases mais avançadas têm mundos fisicamente maiores, revelados aos poucos por blocos.
+    this.worldW = 2400 + (zone.ordem - 1) * 320;
+    this.worldH = 1700 + (zone.ordem - 1) * 220;
+    this.physics.world.setBounds(0, 0, this.worldW, this.worldH);
+
+    const bg = this.add.tileSprite(0, 0, this.worldW, this.worldH, 'tiles', 48).setOrigin(0, 0);
     bg.setTint(zone.corAmbiente);
 
-    // Trees (static obstacles)
     this.trees = this.physics.add.staticGroup();
-    const rng = new Phaser.Math.RandomDataGenerator([zone.id]);
-    for (let i = 0; i < TREE_COUNT; i++) {
-      const x = rng.between(40, WORLD_W - 40);
-      const y = rng.between(40, WORLD_H - 40);
-      if (Phaser.Math.Distance.Between(x, y, player.x, player.y) < 120) continue;
-      this.drawTree(x, y);
-    }
+    this.enemies = this.physics.add.group();
 
     // Shop
     const shopX = 120;
@@ -79,43 +84,16 @@ export class MapScene extends Phaser.Scene {
     this.physics.add.overlap(this.player, this.shopZone, () => {
       this.nearShop = true;
     });
-
-    // Enemies
-    this.enemies = this.physics.add.group();
-    for (let i = 0; i < ENEMY_COUNT; i++) {
-      const enemyId = Phaser.Utils.Array.GetRandom(zone.enemyIds);
-      const enemyDef = getEnemy(enemyId);
-      let x = 0;
-      let y = 0;
-      let tries = 0;
-      do {
-        x = Phaser.Math.Between(60, WORLD_W - 60);
-        y = Phaser.Math.Between(60, WORLD_H - 60);
-        tries++;
-      } while (Phaser.Math.Distance.Between(x, y, player.x, player.y) < 200 && tries < 20);
-
-      const sprite = this.physics.add.sprite(x, y, 'tiles', enemyDef.spriteFrame);
-      sprite.setTint(enemyDef.tint);
-      sprite.setScale(2);
-      sprite.setData('enemyId', enemyId);
-      sprite.setBounce(1);
-      sprite.setCollideWorldBounds(true);
-      this.pickNewWanderVelocity(sprite);
-      this.time.addEvent({
-        delay: Phaser.Math.Between(1800, 3200),
-        loop: true,
-        callback: () => this.pickNewWanderVelocity(sprite),
-      });
-      this.enemies.add(sprite);
-    }
-
     this.physics.add.collider(this.enemies, this.trees);
     this.physics.add.overlap(this.player, this.enemies, (_player, enemySprite) => {
       this.startCombat(enemySprite as Phaser.Physics.Arcade.Sprite);
     });
 
+    // Revela o entorno do jogador assim que a fase carrega.
+    this.ensureChunksAround(player.x, player.y);
+
     // Camera
-    this.cameras.main.setBounds(0, 0, WORLD_W, WORLD_H);
+    this.cameras.main.setBounds(0, 0, this.worldW, this.worldH);
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
     this.cameras.main.setBackgroundColor('#0d0a12');
 
@@ -137,6 +115,68 @@ export class MapScene extends Phaser.Scene {
     });
 
     salvar(player);
+  }
+
+  /** Gera o conteúdo (árvores/inimigos) dos blocos 3x3 ao redor de (px, py), se ainda não gerados. */
+  private ensureChunksAround(px: number, py: number): void {
+    const cx0 = Math.floor(px / CHUNK_SIZE);
+    const cy0 = Math.floor(py / CHUNK_SIZE);
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        this.ensureChunk(cx0 + dx, cy0 + dy);
+      }
+    }
+  }
+
+  private ensureChunk(cx: number, cy: number): void {
+    const key = `${cx},${cy}`;
+    if (this.generatedChunks.has(key)) return;
+    this.generatedChunks.add(key);
+
+    const chunkX0 = cx * CHUNK_SIZE;
+    const chunkY0 = cy * CHUNK_SIZE;
+    if (chunkX0 + CHUNK_SIZE < 0 || chunkY0 + CHUNK_SIZE < 0 || chunkX0 > this.worldW || chunkY0 > this.worldH) {
+      return;
+    }
+
+    const rng = new Phaser.Math.RandomDataGenerator([this.zoneId, key]);
+    const zone = getZone(this.zoneId);
+    const playerX = this.player?.x ?? -9999;
+    const playerY = this.player?.y ?? -9999;
+
+    const treeCount = rng.between(TREES_PER_CHUNK[0], TREES_PER_CHUNK[1]);
+    for (let i = 0; i < treeCount; i++) {
+      const x = Phaser.Math.Clamp(chunkX0 + rng.between(20, CHUNK_SIZE - 20), 20, this.worldW - 20);
+      const y = Phaser.Math.Clamp(chunkY0 + rng.between(20, CHUNK_SIZE - 20), 20, this.worldH - 20);
+      if (Phaser.Math.Distance.Between(x, y, playerX, playerY) < 110) continue;
+      if (Phaser.Math.Distance.Between(x, y, 120, 120) < 90) continue;
+      this.drawTree(x, y);
+    }
+
+    if (rng.frac() < ENEMY_CHANCE_PER_CHUNK && zone.enemyIds.length > 0) {
+      const x = Phaser.Math.Clamp(chunkX0 + rng.between(30, CHUNK_SIZE - 30), 30, this.worldW - 30);
+      const y = Phaser.Math.Clamp(chunkY0 + rng.between(30, CHUNK_SIZE - 30), 30, this.worldH - 30);
+      if (Phaser.Math.Distance.Between(x, y, playerX, playerY) > 160) {
+        this.spawnEnemy(rng.pick(zone.enemyIds), x, y);
+      }
+    }
+  }
+
+  private spawnEnemy(enemyId: string, x: number, y: number): void {
+    const enemyDef = getEnemy(enemyId);
+    const sprite = this.physics.add.sprite(x, y, 'tiles', enemyDef.spriteFrame);
+    sprite.setTint(enemyDef.tint);
+    sprite.setScale(2);
+    sprite.setData('enemyId', enemyId);
+    sprite.setBounce(1);
+    sprite.setCollideWorldBounds(true);
+    this.pickNewWanderVelocity(sprite);
+    this.time.addEvent({
+      delay: Phaser.Math.Between(1800, 3200),
+      loop: true,
+      callback: () => this.pickNewWanderVelocity(sprite),
+    });
+    this.enemies.add(sprite);
   }
 
   private drawTree(x: number, y: number): void {
@@ -224,5 +264,11 @@ export class MapScene extends Phaser.Scene {
 
     player.x = Math.round(this.player.x);
     player.y = Math.round(this.player.y);
+
+    const chunkKey = `${Math.floor(this.player.x / CHUNK_SIZE)},${Math.floor(this.player.y / CHUNK_SIZE)}`;
+    if (chunkKey !== this.lastChunkKey) {
+      this.lastChunkKey = chunkKey;
+      this.ensureChunksAround(this.player.x, this.player.y);
+    }
   }
 }
