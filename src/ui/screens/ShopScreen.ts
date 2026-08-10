@@ -44,6 +44,7 @@ export function showShop(player: PlayerData, onClose: () => void, onChange: () =
       if (item.efeitos.bonusMagia) efeitos.push(`+${item.efeitos.bonusMagia} Magia`);
       if (item.efeitos.bonusVidaMax) efeitos.push(`+${item.efeitos.bonusVidaMax} Vida máx.`);
       if (item.efeitos.bonusAgilidade) efeitos.push(`+${item.efeitos.bonusAgilidade} Agilidade`);
+      if (item.efeitos.bonusDefesa) efeitos.push(`+${item.efeitos.bonusDefesa} Defesa`);
       const tags: string[] = [];
       if (item.tipoArma) tags.push(ARMA_LABEL[item.tipoArma]);
       if (item.elemento) tags.push(ELEMENTO_LABEL[item.elemento]);

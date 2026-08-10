@@ -6,6 +6,7 @@ export interface EffectiveStats {
   magia: number;
   agilidade: number;
   vidaMax: number;
+  defesa: number;
 }
 
 export function getEffectiveStats(player: PlayerData): EffectiveStats {
@@ -14,6 +15,7 @@ export function getEffectiveStats(player: PlayerData): EffectiveStats {
     magia: player.magia,
     agilidade: player.agilidade,
     vidaMax: player.vidaMax,
+    defesa: 0,
   };
 
   for (const equippedId of [player.armaId, player.armaduraId]) {
@@ -23,6 +25,7 @@ export function getEffectiveStats(player: PlayerData): EffectiveStats {
     stats.magia += item.efeitos.bonusMagia ?? 0;
     stats.vidaMax += item.efeitos.bonusVidaMax ?? 0;
     stats.agilidade += item.efeitos.bonusAgilidade ?? 0;
+    stats.defesa += item.efeitos.bonusDefesa ?? 0;
   }
 
   return stats;

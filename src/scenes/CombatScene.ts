@@ -10,12 +10,19 @@ import {
   computeEnemyDamage,
   computeCoinDrop,
   rollFlee,
+  rollDodge,
 } from '../systems/combat/CombatSystem';
 import { usarConsumivel } from '../systems/inventory/InventorySystem';
 import { getItem, ITEMS } from '../data/items';
-import type { EnemyTier } from '../data/types';
+import type { EnemyTier, ElementType } from '../data/types';
 import { el, uiRoot } from '../ui/dom';
 import { salvar } from '../systems/save/SaveManager';
+import { ELEMENTO_LABEL } from '../ui/itemLabels';
+
+interface EnemyStatus {
+  tipo: ElementType;
+  turnos: number;
+}
 
 interface CombatInitData {
   enemyId: string;
@@ -37,6 +44,7 @@ export class CombatScene extends Phaser.Scene {
   private turnBusy = false;
   private ended = false;
   private damageFlash!: Phaser.GameObjects.Rectangle;
+  private enemyStatus: EnemyStatus | null = null;
 
   constructor() {
     super('CombatScene');
@@ -46,6 +54,7 @@ export class CombatScene extends Phaser.Scene {
     this.enemyId = data.enemyId;
     this.ended = false;
     this.turnBusy = false;
+    this.enemyStatus = null;
   }
 
   create(): void {
@@ -280,6 +289,11 @@ export class CombatScene extends Phaser.Scene {
       this.log(`✨ Sua magia causou ${dano} de dano.`);
     }
 
+    if (arma?.elemento && Math.random() < 0.4) {
+      this.enemyStatus = { tipo: arma.elemento, turnos: 3 };
+      this.log(`${ELEMENTO_LABEL[arma.elemento]} atinge ${enemyDef.nome}!`);
+    }
+
     this.strikeSprite(this.playerSprite, 32);
     this.flashSprite(this.enemySprite);
     this.time.delayedCall(90, () => {
@@ -297,11 +311,60 @@ export class CombatScene extends Phaser.Scene {
     this.enemyTurn();
   }
 
+  private decayEnemyStatus(): void {
+    if (!this.enemyStatus) return;
+    this.enemyStatus.turnos -= 1;
+    if (this.enemyStatus.turnos <= 0) this.enemyStatus = null;
+  }
+
+  private sidestepSprite(target: Phaser.GameObjects.Sprite): void {
+    const startX = target.x;
+    this.tweens.add({ targets: target, x: startX - 14, duration: 90, yoyo: true, ease: 'Sine.easeOut' });
+  }
+
   private enemyTurn(): void {
     const player = getPlayer();
+    const stats = getEffectiveStats(player);
     const enemyDef = getEnemy(this.enemyId);
-    this.time.delayedCall(500, () => {
-      const dano = computeEnemyDamage(enemyDef.ataque);
+    const isBoss = enemyDef.tier === 'boss';
+
+    const resolve = (): void => {
+      if (this.enemyStatus) {
+        const { tipo } = this.enemyStatus;
+        if (tipo === 'fogo' || tipo === 'veneno') {
+          const dot = Math.max(1, Math.round(this.enemyHpMax * 0.06));
+          this.enemyHp = Math.max(0, this.enemyHp - dot);
+          this.log(`${ELEMENTO_LABEL[tipo]} causa ${dot} de dano contínuo em ${enemyDef.nome}.`);
+          this.updateBars(player);
+          this.decayEnemyStatus();
+          if (this.enemyHp <= 0) {
+            this.victory(player, enemyDef);
+            return;
+          }
+        } else if (tipo === 'gelo') {
+          this.log(`${ELEMENTO_LABEL[tipo]} congela ${enemyDef.nome}, que perde o turno!`);
+          this.decayEnemyStatus();
+          this.turnBusy = false;
+          this.setButtonsEnabled(true);
+          return;
+        }
+      }
+
+      if (rollDodge(stats.agilidade)) {
+        this.log(`🌀 Você esquivou do ataque de ${enemyDef.nome}!`);
+        this.sidestepSprite(this.playerSprite);
+        this.turnBusy = false;
+        this.setButtonsEnabled(true);
+        return;
+      }
+
+      const enfraquecido = this.enemyStatus?.tipo === 'sombrio';
+      let dano = computeEnemyDamage(enemyDef.ataque, stats.defesa);
+      if (enfraquecido) {
+        dano = Math.max(1, Math.round(dano * 0.7));
+        this.decayEnemyStatus();
+      }
+
       this.log(`💥 ${enemyDef.nome} atacou e causou ${dano} de dano.`);
       this.strikeSprite(this.enemySprite, -32);
       this.flashSprite(this.playerSprite);
@@ -320,7 +383,14 @@ export class CombatScene extends Phaser.Scene {
 
       this.turnBusy = false;
       this.setButtonsEnabled(true);
-    });
+    };
+
+    if (isBoss) {
+      this.log(`⚠️ ${enemyDef.nome} prepara um golpe poderoso...`);
+      this.time.delayedCall(750, resolve);
+    } else {
+      this.time.delayedCall(500, resolve);
+    }
   }
 
   private victory(player: ReturnType<typeof getPlayer>, enemyDef: ReturnType<typeof getEnemy>): void {

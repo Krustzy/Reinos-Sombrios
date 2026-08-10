@@ -45,6 +45,7 @@ export interface ItemDef {
     bonusMagia?: number;
     bonusVidaMax?: number;
     bonusAgilidade?: number;
+    bonusDefesa?: number;
   };
   slot?: 'arma' | 'armadura';
   tipoArma?: WeaponType;

@@ -15,8 +15,25 @@ export function computeMagicDamage(magia: number): number {
   return randomVariance(magia * 1.3, 0.4);
 }
 
-export function computeEnemyDamage(ataque: number): number {
-  return randomVariance(ataque, 0.35);
+/** Defesa reduz o dano recebido de forma direta, com piso de 1. */
+export function computeEnemyDamage(ataque: number, defesa = 0): number {
+  return Math.max(1, randomVariance(ataque, 0.35) - defesa);
+}
+
+export function computeCritChance(agilidade: number, bonusArma = 0): number {
+  return Math.min(60, agilidade * 0.6 + bonusArma);
+}
+
+export function rollCrit(agilidade: number, bonusArma = 0): boolean {
+  return Math.random() * 100 < computeCritChance(agilidade, bonusArma);
+}
+
+export function computeDodgeChance(agilidade: number): number {
+  return Math.min(35, agilidade * 0.45);
+}
+
+export function rollDodge(agilidade: number): boolean {
+  return Math.random() * 100 < computeDodgeChance(agilidade);
 }
 
 export interface GolpeResultado {
@@ -25,30 +42,35 @@ export interface GolpeResultado {
   golpeDuplo?: boolean;
 }
 
+const CRIT_MULTIPLICADOR = 1.6;
+
 /** Dano de "Atacar", variando por tipo de arma equipada (espada é o padrão sem arma). */
 export function computeWeaponAttack(tipoArma: WeaponType | undefined, stats: EffectiveStats): GolpeResultado[] {
+  const bonusCritArma = tipoArma === 'arco' ? 20 : 0;
+  const critico = rollCrit(stats.agilidade, bonusCritArma);
+  const mult = critico ? CRIT_MULTIPLICADOR : 1;
+
   switch (tipoArma) {
     case 'machado':
-      return [{ dano: randomVariance(stats.forca * 1.35, 0.5) }];
+      return [{ dano: Math.round(randomVariance(stats.forca * 1.35, 0.5) * mult), critico }];
 
     case 'arco': {
-      const critico = Math.random() < 0.25;
       const base = randomVariance(stats.agilidade * 1.15, 0.3);
-      return [{ dano: critico ? Math.round(base * 1.6) : base, critico }];
+      return [{ dano: Math.round(base * mult), critico }];
     }
 
     case 'adaga': {
-      const golpe1 = randomVariance(stats.forca * 0.65, 0.3);
-      const resultados: GolpeResultado[] = [{ dano: golpe1 }];
+      const golpe1 = Math.round(randomVariance(stats.forca * 0.65, 0.3) * mult);
+      const resultados: GolpeResultado[] = [{ dano: golpe1, critico }];
       if (Math.random() < 0.35) {
-        resultados.push({ dano: randomVariance(stats.forca * 0.65, 0.3), golpeDuplo: true });
+        resultados.push({ dano: Math.round(randomVariance(stats.forca * 0.65, 0.3) * mult), golpeDuplo: true, critico });
       }
       return resultados;
     }
 
     case 'espada':
     default:
-      return [{ dano: computeAttackDamage(stats.forca) }];
+      return [{ dano: Math.round(computeAttackDamage(stats.forca) * mult), critico }];
   }
 }
 

@@ -42,6 +42,7 @@ export function showCharacterSheet(player: PlayerData, onClose: () => void, onCh
     ['Força', String(stats.forca)],
     ['Magia', String(stats.magia)],
     ['Agilidade', String(stats.agilidade)],
+    ['Defesa', String(stats.defesa)],
     ['Moedas', `💰 ${player.moedas}`],
     ['Fragmentos Sombrios', `🔮 ${player.fragmentosSombrios}`],
     ['Arma', descreverArma(player.armaId)],

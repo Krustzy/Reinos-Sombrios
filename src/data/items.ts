@@ -58,12 +58,12 @@ export const ITEMS: ItemDef[] = [
   {
     id: 'armadura-ferro', nome: 'Armadura de Ferro', tipo: 'armadura', raridade: 'comum',
     precoMoedas: 250, vendaMoedas: 90, spriteFrame: 102, tint: 0xaab4c2,
-    efeitos: { bonusVidaMax: 40 }, slot: 'armadura',
+    efeitos: { bonusVidaMax: 40, bonusDefesa: 5 }, slot: 'armadura',
   },
   {
     id: 'armadura-dragao', nome: 'Armadura do Dragão', tipo: 'armadura', raridade: 'epico',
     precoMoedas: 700, vendaMoedas: 280, spriteFrame: 102, tint: 0xc23b2e,
-    efeitos: { bonusVidaMax: 100, bonusForca: 10 }, slot: 'armadura',
+    efeitos: { bonusVidaMax: 100, bonusForca: 10, bonusDefesa: 15 }, slot: 'armadura',
   },
 ];
 
