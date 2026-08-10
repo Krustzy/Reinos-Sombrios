@@ -399,6 +399,10 @@ export class CombatScene extends Phaser.Scene {
     player.fragmentosSombrios += enemyDef.fragmentosSombrios;
     const { niveisGanhos, novoNivel } = ganharXp(player, enemyDef.xp);
 
+    if (!player.inimigosDescobertos.includes(enemyDef.id)) {
+      player.inimigosDescobertos.push(enemyDef.id);
+    }
+
     this.log(`💀 Você derrotou ${enemyDef.nome}! +${enemyDef.xp} XP, +${moedas} moedas.`);
     if (enemyDef.fragmentosSombrios > 0) {
       this.log(`🔮 Você recebeu ${enemyDef.fragmentosSombrios} Fragmentos Sombrios.`);

@@ -21,5 +21,6 @@ export function criarNovoPersonagem(nome: string, racaId: string): PlayerData {
     zonaAtual: 'floresta-sombria',
     x: 400,
     y: 300,
+    inimigosDescobertos: [],
   };
 }

@@ -15,6 +15,7 @@ export function mountHud(
   input: InputController,
   onAbrirPersonagem: () => void,
   onAbrirMapa: () => void,
+  onAbrirBestiario: () => void,
 ): HudHandle {
   const hud = el('div', undefined);
   hud.id = 'hud';
@@ -59,6 +60,8 @@ export function mountHud(
   mapBtn.addEventListener('click', onAbrirMapa);
   const charBtn = el('button', 'btn', '👤 Personagem');
   charBtn.addEventListener('click', onAbrirPersonagem);
+  const bestiaryBtn = el('button', 'btn', '📖 Bestiário');
+  bestiaryBtn.addEventListener('click', onAbrirBestiario);
   const saveBtn = el('button', 'btn', '💾 Salvar');
   saveBtn.addEventListener('click', () => {
     salvar(player);
@@ -67,6 +70,7 @@ export function mountHud(
   });
   actions.appendChild(mapBtn);
   actions.appendChild(charBtn);
+  actions.appendChild(bestiaryBtn);
   actions.appendChild(saveBtn);
 
   uiRoot().appendChild(hud);

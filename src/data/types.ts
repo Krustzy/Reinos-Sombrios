@@ -84,4 +84,5 @@ export interface PlayerData {
   zonaAtual: string;
   x: number;
   y: number;
+  inimigosDescobertos: string[];
 }

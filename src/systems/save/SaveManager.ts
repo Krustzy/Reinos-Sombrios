@@ -22,6 +22,8 @@ export function carregar(): PlayerData | null {
     const raw = localStorage.getItem(SAVE_KEY);
     if (!raw) return null;
     const saveGame = JSON.parse(raw) as SaveGame;
+    // Compatibilidade com saves salvos antes de campos mais recentes existirem.
+    if (!saveGame.player.inimigosDescobertos) saveGame.player.inimigosDescobertos = [];
     return saveGame.player;
   } catch (err) {
     console.error('Falha ao carregar o jogo:', err);

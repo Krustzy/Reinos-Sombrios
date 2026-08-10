@@ -9,6 +9,7 @@ import { mountHud, type HudHandle } from '../ui/hud';
 import { showShop } from '../ui/screens/ShopScreen';
 import { showCharacterSheet } from '../ui/screens/CharacterSheetScreen';
 import { showZoneTravel } from '../ui/screens/ZoneTravelScreen';
+import { showBestiary } from '../ui/screens/BestiaryScreen';
 import { salvar } from '../systems/save/SaveManager';
 
 const PLAYER_SPEED = 160;
@@ -104,6 +105,7 @@ export class MapScene extends Phaser.Scene {
       this.input$,
       () => this.openCharacterSheet(),
       () => this.openZoneTravel(),
+      () => this.openBestiary(),
     );
 
     this.input.keyboard?.on('keydown-E', () => {
@@ -225,6 +227,11 @@ export class MapScene extends Phaser.Scene {
         this.scene.start('MapScene');
       },
     );
+  }
+
+  private openBestiary(): void {
+    const player = getPlayer();
+    showBestiary(player, () => {});
   }
 
   private startCombat(enemySprite: Phaser.Physics.Arcade.Sprite): void {
