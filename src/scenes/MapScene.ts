@@ -10,9 +10,11 @@ import { showShop } from '../ui/screens/ShopScreen';
 import { showCharacterSheet } from '../ui/screens/CharacterSheetScreen';
 import { salvar } from '../systems/save/SaveManager';
 
-const WORLD_W = 1400;
-const WORLD_H = 1000;
+const WORLD_W = 2800;
+const WORLD_H = 2000;
 const PLAYER_SPEED = 160;
+const TREE_COUNT = 110;
+const ENEMY_COUNT = 16;
 
 export class MapScene extends Phaser.Scene {
   private player!: Phaser.Physics.Arcade.Sprite;
@@ -43,7 +45,7 @@ export class MapScene extends Phaser.Scene {
     // Trees (static obstacles)
     this.trees = this.physics.add.staticGroup();
     const rng = new Phaser.Math.RandomDataGenerator([zone.id]);
-    for (let i = 0; i < 40; i++) {
+    for (let i = 0; i < TREE_COUNT; i++) {
       const x = rng.between(40, WORLD_W - 40);
       const y = rng.between(40, WORLD_H - 40);
       if (Phaser.Math.Distance.Between(x, y, player.x, player.y) < 120) continue;
@@ -53,7 +55,7 @@ export class MapScene extends Phaser.Scene {
     // Shop
     const shopX = 120;
     const shopY = 120;
-    const shopSprite = this.add.sprite(shopX, shopY, 'tiles', 44).setScale(3);
+    const shopSprite = this.add.sprite(shopX, shopY, 'tiles', 92).setScale(3);
     this.add.text(shopX, shopY - 28, '🏪 Loja', { fontSize: '13px', color: '#c9a13b' }).setOrigin(0.5);
     shopSprite.setInteractive({ useHandCursor: true });
     shopSprite.on('pointerdown', () => this.openShop());
@@ -79,7 +81,7 @@ export class MapScene extends Phaser.Scene {
 
     // Enemies
     this.enemies = this.physics.add.group();
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < ENEMY_COUNT; i++) {
       const enemyId = Phaser.Utils.Array.GetRandom(zone.enemyIds);
       const enemyDef = getEnemy(enemyId);
       let x = 0;

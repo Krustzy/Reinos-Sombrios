@@ -26,5 +26,6 @@ export class PreloaderScene extends Phaser.Scene {
 
   create(): void {
     this.game.events.emit('assets-ready');
+    this.scene.stop();
   }
 }
