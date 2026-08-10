@@ -49,8 +49,10 @@ export interface ItemDef {
 export interface ZoneDef {
   id: string;
   nome: string;
+  ordem: number;
   nivelMinimo: number;
   enemyIds: string[];
+  corAmbiente: number;
 }
 
 export interface InventoryEntry {

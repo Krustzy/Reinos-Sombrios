@@ -14,6 +14,7 @@ export function mountHud(
   player: PlayerData,
   input: InputController,
   onAbrirPersonagem: () => void,
+  onAbrirMapa: () => void,
 ): HudHandle {
   const hud = el('div', undefined);
   hud.id = 'hud';
@@ -54,6 +55,8 @@ export function mountHud(
 
   const actions = el('div');
   actions.id = 'action-buttons';
+  const mapBtn = el('button', 'btn', '🗺️ Mapa');
+  mapBtn.addEventListener('click', onAbrirMapa);
   const charBtn = el('button', 'btn', '👤 Personagem');
   charBtn.addEventListener('click', onAbrirPersonagem);
   const saveBtn = el('button', 'btn', '💾 Salvar');
@@ -62,6 +65,7 @@ export function mountHud(
     saveBtn.textContent = '✅ Salvo!';
     setTimeout(() => (saveBtn.textContent = '💾 Salvar'), 1200);
   });
+  actions.appendChild(mapBtn);
   actions.appendChild(charBtn);
   actions.appendChild(saveBtn);
 

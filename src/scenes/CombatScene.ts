@@ -13,6 +13,7 @@ import {
 } from '../systems/combat/CombatSystem';
 import { usarConsumivel } from '../systems/inventory/InventorySystem';
 import { getItem, ITEMS } from '../data/items';
+import type { EnemyTier } from '../data/types';
 import { el, uiRoot } from '../ui/dom';
 import { salvar } from '../systems/save/SaveManager';
 
@@ -35,6 +36,7 @@ export class CombatScene extends Phaser.Scene {
   private buttons: HTMLButtonElement[] = [];
   private turnBusy = false;
   private ended = false;
+  private damageFlash!: Phaser.GameObjects.Rectangle;
 
   constructor() {
     super('CombatScene');
@@ -79,6 +81,8 @@ export class CombatScene extends Phaser.Scene {
       repeat: -1,
       ease: 'Sine.easeInOut',
     });
+
+    this.damageFlash = this.add.rectangle(width / 2, height / 2, width, height, 0xff0000, 0).setDepth(100);
 
     this.buildPanel(player);
     this.events.once('shutdown', () => this.panel.remove());
@@ -158,13 +162,31 @@ export class CombatScene extends Phaser.Scene {
     for (const b of this.buttons) b.disabled = !enabled;
   }
 
-  private lungeSprite(target: Phaser.GameObjects.Sprite, dx: number): void {
+  /** Windup (pull back) + strike (lunge past the old distance) + return, instead of a single small hop. */
+  private strikeSprite(target: Phaser.GameObjects.Sprite, dx: number): void {
+    const startX = target.x;
+    const dir = Math.sign(dx) || 1;
     this.tweens.add({
       targets: target,
-      x: target.x + dx,
-      duration: 90,
-      yoyo: true,
-      ease: 'Quad.easeOut',
+      x: startX - dir * 8,
+      duration: 70,
+      ease: 'Sine.easeOut',
+      onComplete: () => {
+        this.tweens.add({
+          targets: target,
+          x: startX + dx,
+          duration: 100,
+          ease: 'Back.easeIn',
+          onComplete: () => {
+            this.tweens.add({
+              targets: target,
+              x: startX,
+              duration: 130,
+              ease: 'Sine.easeOut',
+            });
+          },
+        });
+      },
     });
   }
 
@@ -174,6 +196,38 @@ export class CombatScene extends Phaser.Scene {
     this.time.delayedCall(80, () => {
       target.setTintMode(Phaser.TintModes.MULTIPLY).setTint(originalTint);
     });
+  }
+
+  /** Short burst of radiating lines at the point of impact. */
+  private impactBurst(x: number, y: number, color = 0xf5efe0): void {
+    const g = this.add.graphics();
+    g.setDepth(60);
+    g.lineStyle(2, color, 1);
+    const rays = 6;
+    for (let i = 0; i < rays; i++) {
+      const angle = (Math.PI * 2 * i) / rays + Phaser.Math.FloatBetween(-0.25, 0.25);
+      const len = Phaser.Math.Between(10, 20);
+      g.lineBetween(x, y, x + Math.cos(angle) * len, y + Math.sin(angle) * len);
+    }
+    this.tweens.add({
+      targets: g,
+      alpha: 0,
+      scale: 1.7,
+      duration: 200,
+      ease: 'Quad.easeOut',
+      onComplete: () => g.destroy(),
+    });
+  }
+
+  private shakeForHit(tier: EnemyTier): void {
+    if (tier === 'boss') this.cameras.main.shake(220, 0.012);
+    else if (tier === 'elite') this.cameras.main.shake(150, 0.008);
+    else this.cameras.main.shake(100, 0.005);
+  }
+
+  private flashDamageOverlay(): void {
+    this.damageFlash.setAlpha(0.28);
+    this.tweens.add({ targets: this.damageFlash, alpha: 0, duration: 220, ease: 'Sine.easeOut' });
   }
 
   private playerTurn(acao: 'atacar' | 'magia' | 'pocao' | 'fugir'): void {
@@ -221,8 +275,12 @@ export class CombatScene extends Phaser.Scene {
       this.log(`✨ Sua magia causou ${dano} de dano.`);
     }
 
-    this.lungeSprite(this.playerSprite, 20);
+    this.strikeSprite(this.playerSprite, 32);
     this.flashSprite(this.enemySprite);
+    this.time.delayedCall(90, () => {
+      this.impactBurst(this.enemySprite.x, this.enemySprite.y);
+      this.shakeForHit(enemyDef.tier);
+    });
     this.enemyHp = Math.max(0, this.enemyHp - dano);
     this.updateBars(player);
 
@@ -240,8 +298,13 @@ export class CombatScene extends Phaser.Scene {
     this.time.delayedCall(500, () => {
       const dano = computeEnemyDamage(enemyDef.ataque);
       this.log(`💥 ${enemyDef.nome} atacou e causou ${dano} de dano.`);
-      this.lungeSprite(this.enemySprite, -20);
+      this.strikeSprite(this.enemySprite, -32);
       this.flashSprite(this.playerSprite);
+      this.flashDamageOverlay();
+      this.time.delayedCall(90, () => {
+        this.impactBurst(this.playerSprite.x, this.playerSprite.y);
+        this.shakeForHit(enemyDef.tier);
+      });
       player.vida = Math.max(0, player.vida - dano);
       this.updateBars(player);
 
@@ -272,8 +335,16 @@ export class CombatScene extends Phaser.Scene {
     this.tweens.add({
       targets: this.enemySprite,
       alpha: 0,
-      duration: 300,
+      scale: this.enemySprite.scale * 0.35,
+      angle: 30,
+      duration: 420,
+      ease: 'Cubic.easeIn',
     });
+
+    if (enemyDef.tier === 'boss') {
+      this.cameras.main.shake(350, 0.02);
+      this.cameras.main.flash(220, 60, 30, 90);
+    }
 
     this.endCombat('vitoria');
   }

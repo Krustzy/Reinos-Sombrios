@@ -8,6 +8,7 @@ import { InputController } from '../systems/input/InputController';
 import { mountHud, type HudHandle } from '../ui/hud';
 import { showShop } from '../ui/screens/ShopScreen';
 import { showCharacterSheet } from '../ui/screens/CharacterSheetScreen';
+import { showZoneTravel } from '../ui/screens/ZoneTravelScreen';
 import { salvar } from '../systems/save/SaveManager';
 
 const WORLD_W = 2800;
@@ -40,7 +41,7 @@ export class MapScene extends Phaser.Scene {
     this.physics.world.setBounds(0, 0, WORLD_W, WORLD_H);
 
     const bg = this.add.tileSprite(0, 0, WORLD_W, WORLD_H, 'tiles', 48).setOrigin(0, 0);
-    bg.setTint(0x1c3320);
+    bg.setTint(zone.corAmbiente);
 
     // Trees (static obstacles)
     this.trees = this.physics.add.staticGroup();
@@ -120,7 +121,12 @@ export class MapScene extends Phaser.Scene {
 
     // Input + HUD
     this.input$ = new InputController(this);
-    this.hud = mountHud(player, this.input$, () => this.openCharacterSheet());
+    this.hud = mountHud(
+      player,
+      this.input$,
+      () => this.openCharacterSheet(),
+      () => this.openZoneTravel(),
+    );
 
     this.input.keyboard?.on('keydown-E', () => {
       if (this.nearShop) this.openShop();
@@ -163,6 +169,21 @@ export class MapScene extends Phaser.Scene {
       player,
       () => {},
       () => this.hud.refresh(),
+    );
+  }
+
+  private openZoneTravel(): void {
+    const player = getPlayer();
+    showZoneTravel(
+      player,
+      () => {},
+      (zoneId) => {
+        player.zonaAtual = zoneId;
+        player.x = 400;
+        player.y = 300;
+        salvar(player);
+        this.scene.start('MapScene');
+      },
     );
   }
 

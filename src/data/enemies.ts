@@ -1,11 +1,25 @@
 import type { EnemyDef } from './types';
 
 export const ENEMIES: EnemyDef[] = [
+  // Comuns
   { id: 'goblin', nome: 'Goblin', vida: 50, ataque: 8, xp: 40, moedas: 30, moedasVariancia: 8, fragmentosSombrios: 0, spriteFrame: 112, tint: 0xffffff, tier: 'comum' },
   { id: 'esqueleto', nome: 'Esqueleto', vida: 70, ataque: 10, xp: 60, moedas: 50, moedasVariancia: 10, fragmentosSombrios: 0, spriteFrame: 124, tint: 0xe8e8e8, tier: 'comum' },
+  { id: 'limo-corrosivo', nome: 'Limo Corrosivo', vida: 60, ataque: 9, xp: 50, moedas: 40, moedasVariancia: 9, fragmentosSombrios: 0, spriteFrame: 108, tint: 0x6fbf8f, tier: 'comum' },
   { id: 'lobo-gigante', nome: 'Lobo Gigante', vida: 80, ataque: 13, xp: 75, moedas: 70, moedasVariancia: 12, fragmentosSombrios: 0, spriteFrame: 111, tint: 0x7a8a99, tier: 'comum' },
+  { id: 'fera-uivante', nome: 'Fera Uivante', vida: 105, ataque: 17, xp: 105, moedas: 95, moedasVariancia: 14, fragmentosSombrios: 0, spriteFrame: 111, tint: 0x3d4a55, tier: 'comum' },
+  { id: 'aranha-gigante', nome: 'Aranha Gigante', vida: 95, ataque: 15, xp: 90, moedas: 80, moedasVariancia: 13, fragmentosSombrios: 0, spriteFrame: 122, tint: 0xffffff, tier: 'comum' },
+  { id: 'morcego-vampirico', nome: 'Morcego Vampírico', vida: 85, ataque: 14, xp: 85, moedas: 75, moedasVariancia: 13, fragmentosSombrios: 0, spriteFrame: 120, tint: 0x8a5fc9, tier: 'comum' },
+
+  // Elites
   { id: 'ork-renegado', nome: 'Ork Renegado', vida: 110, ataque: 18, xp: 100, moedas: 100, moedasVariancia: 15, fragmentosSombrios: 1, spriteFrame: 109, tint: 0xb5502f, tier: 'elite' },
+  { id: 'espectro-sombrio', nome: 'Espectro Sombrio', vida: 135, ataque: 21, xp: 140, moedas: 130, moedasVariancia: 16, fragmentosSombrios: 1, spriteFrame: 121, tint: 0x9d8fd9, tier: 'elite' },
+  { id: 'escorpiao-trevas', nome: 'Escorpião das Trevas', vida: 145, ataque: 22, xp: 145, moedas: 135, moedasVariancia: 16, fragmentosSombrios: 1, spriteFrame: 110, tint: 0x8b1a2b, tier: 'elite' },
+  { id: 'assassino-encapuzado', nome: 'Assassino Encapuzado', vida: 150, ataque: 23, xp: 150, moedas: 140, moedasVariancia: 17, fragmentosSombrios: 1, spriteFrame: 123, tint: 0x2e2e3a, tier: 'elite' },
+  { id: 'guarda-sombrio', nome: 'Guarda Sombrio', vida: 190, ataque: 28, xp: 200, moedas: 190, moedasVariancia: 18, fragmentosSombrios: 2, spriteFrame: 97, tint: 0x5a2a3a, tier: 'elite' },
+
+  // Bosses
   { id: 'cavaleiro-sombrio', nome: 'Cavaleiro Sombrio', vida: 160, ataque: 24, xp: 180, moedas: 180, moedasVariancia: 20, fragmentosSombrios: 5, spriteFrame: 96, tint: 0x4b2b6b, tier: 'boss' },
+  { id: 'senhor-sombrio', nome: 'Senhor Sombrio', vida: 380, ataque: 38, xp: 500, moedas: 450, moedasVariancia: 25, fragmentosSombrios: 15, spriteFrame: 96, tint: 0x1a0d26, tier: 'boss' },
 ];
 
 export function getEnemy(id: string): EnemyDef {
