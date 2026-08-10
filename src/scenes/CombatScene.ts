@@ -5,8 +5,8 @@ import { getEnemy } from '../data/enemies';
 import { getEffectiveStats } from '../systems/progression/EquipmentStats';
 import { ganharXp } from '../systems/progression/LevelSystem';
 import {
-  computeAttackDamage,
-  computeMagicDamage,
+  computeWeaponAttack,
+  computeWeaponMagic,
   computeEnemyDamage,
   computeCoinDrop,
   rollFlee,
@@ -266,12 +266,17 @@ export class CombatScene extends Phaser.Scene {
       return;
     }
 
+    const arma = player.armaId ? getItem(player.armaId) : null;
     let dano: number;
     if (acao === 'atacar') {
-      dano = computeAttackDamage(stats.forca);
-      this.log(`⚔ Você atacou e causou ${dano} de dano.`);
+      const golpes = computeWeaponAttack(arma?.tipoArma, stats);
+      dano = golpes.reduce((soma, g) => soma + g.dano, 0);
+      for (const golpe of golpes) {
+        const tag = golpe.critico ? ' (crítico!)' : golpe.golpeDuplo ? ' (2º golpe)' : '';
+        this.log(`⚔ Você atacou e causou ${golpe.dano} de dano${tag}.`);
+      }
     } else {
-      dano = computeMagicDamage(stats.magia);
+      dano = computeWeaponMagic(arma?.tipoArma, stats);
       this.log(`✨ Sua magia causou ${dano} de dano.`);
     }
 

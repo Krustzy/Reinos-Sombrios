@@ -22,6 +22,7 @@ export function getEffectiveStats(player: PlayerData): EffectiveStats {
     stats.forca += item.efeitos.bonusForca ?? 0;
     stats.magia += item.efeitos.bonusMagia ?? 0;
     stats.vidaMax += item.efeitos.bonusVidaMax ?? 0;
+    stats.agilidade += item.efeitos.bonusAgilidade ?? 0;
   }
 
   return stats;

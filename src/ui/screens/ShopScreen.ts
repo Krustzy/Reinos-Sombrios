@@ -4,6 +4,7 @@ import type { PlayerData } from '../../data/types';
 import { comprarItem, venderItem } from '../../systems/economy/EconomySystem';
 import { applyFrameToImg } from '../../utils/spriteRender';
 import { salvar } from '../../systems/save/SaveManager';
+import { ARMA_LABEL, ELEMENTO_LABEL } from '../itemLabels';
 
 export function showShop(player: PlayerData, onClose: () => void, onChange: () => void): void {
   const backdrop = el('div', 'modal-backdrop');
@@ -42,11 +43,15 @@ export function showShop(player: PlayerData, onClose: () => void, onChange: () =
       if (item.efeitos.bonusForca) efeitos.push(`+${item.efeitos.bonusForca} Força`);
       if (item.efeitos.bonusMagia) efeitos.push(`+${item.efeitos.bonusMagia} Magia`);
       if (item.efeitos.bonusVidaMax) efeitos.push(`+${item.efeitos.bonusVidaMax} Vida máx.`);
+      if (item.efeitos.bonusAgilidade) efeitos.push(`+${item.efeitos.bonusAgilidade} Agilidade`);
+      const tags: string[] = [];
+      if (item.tipoArma) tags.push(ARMA_LABEL[item.tipoArma]);
+      if (item.elemento) tags.push(ELEMENTO_LABEL[item.elemento]);
       info.appendChild(
         el(
           'div',
           'item-desc',
-          `<span class="rarity-${item.raridade}">${item.raridade}</span> · ${efeitos.join(', ')} · ${item.precoMoedas} moedas`,
+          `<span class="rarity-${item.raridade}">${item.raridade}</span>${tags.length ? ' · ' + tags.join(' ') : ''} · ${efeitos.join(', ')} · ${item.precoMoedas} moedas`,
         ),
       );
       row.appendChild(info);

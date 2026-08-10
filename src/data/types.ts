@@ -27,6 +27,8 @@ export interface EnemyDef {
 
 export type ItemType = 'consumivel' | 'arma' | 'armadura';
 export type ItemRarity = 'comum' | 'raro' | 'epico' | 'lendario';
+export type WeaponType = 'espada' | 'machado' | 'arco' | 'cajado' | 'adaga';
+export type ElementType = 'fogo' | 'gelo' | 'veneno' | 'sombrio';
 
 export interface ItemDef {
   id: string;
@@ -42,8 +44,11 @@ export interface ItemDef {
     bonusForca?: number;
     bonusMagia?: number;
     bonusVidaMax?: number;
+    bonusAgilidade?: number;
   };
   slot?: 'arma' | 'armadura';
+  tipoArma?: WeaponType;
+  elemento?: ElementType;
 }
 
 export interface ZoneDef {

@@ -7,6 +7,15 @@ import { xpParaProximoNivel } from '../../systems/progression/LevelSystem';
 import { usarConsumivel } from '../../systems/inventory/InventorySystem';
 import { applyFrameToImg } from '../../utils/spriteRender';
 import { salvar } from '../../systems/save/SaveManager';
+import { ARMA_LABEL, ELEMENTO_LABEL } from '../itemLabels';
+
+function descreverArma(armaId: string | null): string {
+  if (!armaId) return '—';
+  const arma = getItem(armaId);
+  const partes = [arma.nome];
+  if (arma.tipoArma) partes.push(`(${ARMA_LABEL[arma.tipoArma]}${arma.elemento ? ` · ${ELEMENTO_LABEL[arma.elemento]}` : ''})`);
+  return partes.join(' ');
+}
 
 export function showCharacterSheet(player: PlayerData, onClose: () => void, onChange: () => void): void {
   const backdrop = el('div', 'modal-backdrop');
@@ -35,7 +44,7 @@ export function showCharacterSheet(player: PlayerData, onClose: () => void, onCh
     ['Agilidade', String(stats.agilidade)],
     ['Moedas', `💰 ${player.moedas}`],
     ['Fragmentos Sombrios', `🔮 ${player.fragmentosSombrios}`],
-    ['Arma', player.armaId ? getItem(player.armaId).nome : '—'],
+    ['Arma', descreverArma(player.armaId)],
     ['Armadura', player.armaduraId ? getItem(player.armaduraId).nome : '—'],
   ];
   for (const [label, value] of rows) {
